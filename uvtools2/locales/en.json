@@ -105,5 +105,20 @@
   "logoDumping": "Downloading logo from radio...",
   "logoDumpComplete": "Logo downloaded! 👍🏼",
   "logoMagicOk": "Magic header OK (F4HWNLGO)",
-  "logoMagicMissing": "Magic header missing — area may have never been written by UVTools2"
+  "logoMagicMissing": "Magic header missing — area may have never been written by UVTools2",
+  "tabFullDump": "Full Dump",
+  "fullDumpDescription": "Read the entire EEPROM memory of your device and save it as a binary file. You can preview the raw data in hex and ASCII format.",
+  "fullDumpDetectBtn": "🔍 Detect Memory Size",
+  "fullDumpDetecting": "Detecting EEPROM size...",
+  "fullDumpDetected": "Detected EEPROM size: {0}",
+  "fullDumpDetectedLabel": "Detected size:",
+  "labelFullDumpSize": "Memory size to dump",
+  "fullDumpBtn": "📥 Start Full Dump",
+  "fullDumpStarting": "Starting full EEPROM dump...",
+  "fullDumpProgress": "Dumping: {0}/{1} bytes ({2}%)",
+  "fullDumpComplete": "Full EEPROM dump complete! 👍🏼",
+  "fullDumpDownloadText": "Download eeprom_full.bin",
+  "fullDumpViewerTitle": "EEPROM data preview",
+  "labelViewerOffset": "Go to offset (hex):",
+  "viewerPage": "Page"
 }

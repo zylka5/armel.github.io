@@ -105,5 +105,20 @@
   "logoDumping": "正在从对讲机下载标志...",
   "logoDumpComplete": "标志已下载！👍🏼",
   "logoMagicOk": "Magic 头校验通过 (F4HWNLGO)",
-  "logoMagicMissing": "Magic 头缺失 — 该区域可能从未被 UVTools2 写入过"
+  "logoMagicMissing": "Magic 头缺失 — 该区域可能从未被 UVTools2 写入过",
+  "tabFullDump": "完整转储",
+  "fullDumpDescription": "读取设备的完整 EEPROM 内存并保存为二进制文件。您可以以十六进制和 ASCII 格式预览原始数据。",
+  "fullDumpDetectBtn": "🔍 检测内存大小",
+  "fullDumpDetecting": "正在检测 EEPROM 大小...",
+  "fullDumpDetected": "检测到的 EEPROM 大小：{0}",
+  "fullDumpDetectedLabel": "检测到的大小：",
+  "labelFullDumpSize": "要转储的内存大小",
+  "fullDumpBtn": "📥 开始完整转储",
+  "fullDumpStarting": "开始完整 EEPROM 转储...",
+  "fullDumpProgress": "转储中：{0}/{1} 字节 ({2}%)",
+  "fullDumpComplete": "完整 EEPROM 转储完成！👍🏼",
+  "fullDumpDownloadText": "下载 eeprom_full.bin",
+  "fullDumpViewerTitle": "EEPROM 数据预览",
+  "labelViewerOffset": "跳转到偏移量（十六进制）：",
+  "viewerPage": "第"
 }
