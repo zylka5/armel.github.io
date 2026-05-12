@@ -44,6 +44,10 @@ const FULL_DUMP_PRESETS = [
   { value: 65536, label: '64 KB' },
   { value: 131072, label: '128 KB' },
 ];
+const MAX_READ_ATTEMPTS = 300;
+const PROBE_CHUNK_SIZE = 16;
+const PROBE_MAX_ATTEMPTS = 60;
+const PROBE_EXTRA_OFFSETS = [49152];
 
 // Boot logo memory layout (mirrors firmware App/ui/welcome.c)
 // Layout in flash sector starting at PY25Q16 0x011000, exposed via EEPROM
@@ -414,7 +418,7 @@ async function maybeLoadFirmwareFromQuery() {
 }
 
 function updateFlashButton() {
-  if (flashBtn) flashBtn.disabled = !firmwareData || isFlashing || isFullDumping;
+  if (flashBtn) flashBtn.disabled = !firmwareData || isFlashing || isDumping || isRestoring || isLogoUploading || isLogoDumping || isFullDumping;
 }
 
 // ========== CALIBRATION FILE INPUT ==========
@@ -443,7 +447,7 @@ if (calibFileInput) {
 }
 
 function updateRestoreButton() {
-  if (restoreBtn) restoreBtn.disabled = !calibData || isRestoring || isFullDumping;
+  if (restoreBtn) restoreBtn.disabled = !calibData || isFlashing || isDumping || isRestoring || isLogoUploading || isLogoDumping || isFullDumping;
 }
 
 // ========== SERIAL CONNECTION ==========
@@ -1047,7 +1051,7 @@ function logDeviceInfo(data) {
   }
 }
 
-async function readEepromChunk(offset, size, timestamp, maxAttempts = 300) {
+async function readEepromChunk(offset, size, timestamp, maxAttempts = MAX_READ_ATTEMPTS) {
   const msg = createMessage(MSG_READ_EEPROM, 8);
   const view = new DataView(msg.buffer);
   view.setUint16(4, offset, true);
@@ -1137,13 +1141,14 @@ if (fullDumpViewerGoBtn && fullDumpViewerOffsetInput) {
 
 // ========= FULL DUMP: MEMORY SIZE DETECTION =========
 async function detectEepromSize(timestamp) {
-  const probeOffsets = [8192, 32768, 49152, 51200, 65536, 131072];
+  const probeOffsets = [...new Set([...FULL_DUMP_PRESETS.map(p => p.value), ...PROBE_EXTRA_OFFSETS])]
+    .sort((a, b) => a - b);
   let detectedSize = 4096;
 
   for (const probe of probeOffsets) {
     try {
-      const data = await readEepromChunk(probe - 16, 16, timestamp, 60);
-      if (data && data.length === 16) {
+      const data = await readEepromChunk(probe - PROBE_CHUNK_SIZE, PROBE_CHUNK_SIZE, timestamp, PROBE_MAX_ATTEMPTS);
+      if (data && data.length === PROBE_CHUNK_SIZE) {
         detectedSize = probe;
       }
     } catch {
@@ -1190,7 +1195,7 @@ async function doFullDump(timestamp) {
   const result = new Uint8Array(totalSize);
   let offset = 0;
 
-  setProgress(0);
+  updateProgress(0);
   showProgress(true);
 
   while (offset < totalSize) {
@@ -1212,7 +1217,7 @@ async function doFullDump(timestamp) {
     offset += chunk;
 
     const pct = Math.round((offset / totalSize) * 100);
-    setProgress(pct);
+    updateProgress(pct);
     if (offset % 256 === 0 || offset >= totalSize) {
       log(t('fullDumpProgress', offset, totalSize, pct), 'info');
     }
@@ -1256,7 +1261,7 @@ if (fullDumpBtn) {
       renderHexViewer(data);
 
       log(t('fullDumpComplete'), 'success');
-      setProgress(100);
+      updateProgress(100);
       setTimeout(() => showProgress(false), 2000);
     } catch (err) {
       log(t('error', err.message), 'error');
@@ -1599,10 +1604,6 @@ function updateProgress(percent) {
   if (progressLabel) progressLabel.textContent = `${rounded}%`;
   const bar = document.querySelector('.progress-bar');
   if (bar) bar.setAttribute('aria-valuenow', String(rounded));
-}
-
-function setProgress(percent) {
-  updateProgress(percent);
 }
 
 function showProgress(show) {
