@@ -34,6 +34,7 @@
       <button class="tab" role="tab" aria-selected="false" data-tab="restore" id="tabRestore">Restore Calib</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="logo-upload" id="tabLogoUpload">Upload Logo</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="logo-dump" id="tabLogoDump">Download Logo</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="full-dump" id="tabFullDump">Full Dump</button>
     </div>
 
     <!-- FLASH FIRMWARE TAB -->
@@ -139,6 +140,59 @@
         </div>
         <div class="download-link" id="logoDumpDownload" style="display:block;">
           <a href="#" id="logoDumpLink" download="logo.png">💾 <span id="logoDumpDownloadText">Download logo.png</span></a>
+        </div>
+      </section>
+    </div>
+
+    <!-- FULL DUMP TAB -->
+    <div class="tab-content" id="full-dump-content" role="tabpanel">
+      <section class="section">
+        <p class="tab-description" id="fullDumpDescription">
+          Read the entire EEPROM memory of your device and save it as a binary file.
+        </p>
+      </section>
+
+      <section class="section">
+        <button id="fullDumpDetectBtn" type="button">🔍 Detect Memory Size</button>
+        <div class="full-dump-detected" id="fullDumpDetectedInfo" hidden>
+          <span id="fullDumpDetectedLabel">Detected size:</span>
+          <strong id="fullDumpDetectedValue">—</strong>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="labelFullDumpSize">
+        <label id="labelFullDumpSize">Memory size to dump</label>
+        <select id="fullDumpSizeSelect" class="full-dump-select">
+          <option value="8192">8 KB (0x0000–0x1FFF) — Channels &amp; basic config</option>
+          <option value="32768">32 KB (0x0000–0x7FFF) — Channels + extended data</option>
+          <option value="51200" selected>50 KB (0x0000–0xC7FF) — Full EEPROM incl. boot logo (UV-K5 V3 / K1)</option>
+          <option value="65536">64 KB (0x0000–0xFFFF) — Full 64 KB chip</option>
+          <option value="131072">128 KB (0x0000–0x1FFFF) — Full 128 KB chip</option>
+        </select>
+      </section>
+
+      <button id="fullDumpBtn" type="button">📥 Start Full Dump</button>
+
+      <div class="download-link" id="fullDumpDownload">
+        <a href="#" id="fullDumpLink" download="eeprom_full.bin">💾 <span id="fullDumpDownloadText">Download eeprom_full.bin</span></a>
+      </div>
+
+      <section class="section full-dump-viewer-section" id="fullDumpViewerSection" hidden>
+        <div class="full-dump-viewer-header">
+          <span id="fullDumpViewerTitle">EEPROM data preview</span>
+          <div class="full-dump-viewer-controls">
+            <label for="fullDumpViewerOffset" id="labelViewerOffset">Go to offset (hex):</label>
+            <input type="text" id="fullDumpViewerOffset" class="full-dump-offset-input" placeholder="0000" maxlength="6" />
+            <button id="fullDumpViewerGoBtn" type="button" class="full-dump-go-btn">Go</button>
+          </div>
+        </div>
+        <div class="hex-viewer" id="hexViewer" aria-label="Hex viewer">
+          <pre class="hex-viewer-pre" id="hexViewerPre"></pre>
+        </div>
+        <div class="full-dump-viewer-pagination">
+          <button id="hexViewerPrevBtn" type="button" class="hex-nav-btn">◀ Prev</button>
+          <span id="hexViewerPageInfo">Page 1 / 1</span>
+          <button id="hexViewerNextBtn" type="button" class="hex-nav-btn">Next ▶</button>
         </div>
       </section>
     </div>
