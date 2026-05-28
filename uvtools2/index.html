@@ -9,6 +9,7 @@
   <title>UV-K5 V3 & UV-K1 Web Tool</title>
   <link rel="icon" type="image/svg+xml" href="img/uvtools2-favicon-color-v2.svg">
   <link rel="preload" href="locales/en.json" as="fetch" type="application/json" crossorigin="anonymous">
+  <link rel="preload" href="locales/pl.json" as="fetch" type="application/json" crossorigin="anonymous">
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -21,6 +22,7 @@
           <option value="en">English</option>
           <option value="fr">Français</option>
           <option value="zh">中文</option>
+          <option value="pl">Polski</option>
         </select>
       </div>
     </header>
@@ -34,6 +36,7 @@
       <button class="tab" role="tab" aria-selected="false" data-tab="restore" id="tabRestore">Restore Calib</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="logo-upload" id="tabLogoUpload">Upload Logo</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="logo-dump" id="tabLogoDump">Download Logo</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="full-dump" id="tabFullDump">Full Dump</button>
     </div>
 
     <!-- FLASH FIRMWARE TAB -->
@@ -139,6 +142,49 @@
         </div>
         <div class="download-link" id="logoDumpDownload" style="display:block;">
           <a href="#" id="logoDumpLink" download="logo.png">💾 <span id="logoDumpDownloadText">Download logo.png</span></a>
+        </div>
+      </section>
+    </div>
+
+    <!-- FULL DUMP TAB -->
+    <div class="tab-content" id="full-dump-content" role="tabpanel">
+      <section class="section">
+        <p class="tab-description" id="fullDumpDescription">
+          Read the EEPROM memory of your device and save it as a binary file. The firmware protocol uses 16-bit addressing, so the maximum readable range is 64 KB (0x0000–0xFFFF). Preview raw data in hex and ASCII format.
+        </p>
+
+        <button id="fullDumpDetectBtn">🔍 Detect Memory Size</button>
+        <p id="fullDumpDetectedLabel" style="display:none;"></p>
+
+        <div class="section" aria-labelledby="labelFullDumpSize">
+          <label id="labelFullDumpSize" for="fullDumpSizeSelect">Memory size to dump</label>
+          <select id="fullDumpSizeSelect">
+            <option value="8192">8 KB (0x0000–0x1FFF) — Channels &amp; basic config</option>
+            <option value="32768">32 KB (0x0000–0x7FFF) — Channels + extended data</option>
+            <option value="51200" selected>50 KB (0x0000–0xC7FF) — Full EEPROM incl. boot logo (UV-K5 V3 / K1)</option>
+            <option value="65535">64 KB (0x0000–0xFFFF) — Maximum (16-bit protocol address limit)</option>
+          </select>
+        </div>
+
+        <button id="fullDumpBtn">📥 Start Full Dump</button>
+      </section>
+
+      <div class="download-link" id="fullDumpDownload" style="display:none;">
+        <a href="#" id="fullDumpLink" download="eeprom_full.bin">💾 <span id="fullDumpDownloadText">Download eeprom_full.bin</span></a>
+      </div>
+
+      <section class="section" id="fullDumpViewerSection" style="display:none;" aria-labelledby="fullDumpViewerTitle">
+        <h3 id="fullDumpViewerTitle" class="viewer-title">EEPROM Data Preview</h3>
+        <div class="viewer-controls">
+          <label for="viewerOffsetInput" id="labelViewerOffset">Go to address (hex):</label>
+          <input type="text" id="viewerOffsetInput" placeholder="0000" maxlength="4" style="width:6em;" />
+          <button id="viewerGoBtn">Go</button>
+          <span id="viewerPageInfo" style="margin-left:1em;"></span>
+        </div>
+        <pre id="fullDumpHexView" class="hex-viewer"></pre>
+        <div class="viewer-nav">
+          <button id="viewerPrevBtn">◀ Prev</button>
+          <button id="viewerNextBtn">Next ▶</button>
         </div>
       </section>
     </div>

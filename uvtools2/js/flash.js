@@ -62,6 +62,10 @@ let isDumping = false;
 let isRestoring = false;
 let isLogoUploading = false;
 let isLogoDumping = false;
+let isFullDumping = false;
+let isFullDumpDetecting = false;
+let fullDumpData = null;      // Uint8Array of last full dump result
+let fullDumpViewerPage = 0;   // current viewer page index
 let readBuffer = [];
 let isReading = false;
 
@@ -116,6 +120,21 @@ const logoDumpResult = document.getElementById('logoDumpResult');
 const logoDumpedCanvas = document.getElementById('logoDumpedCanvas');
 const logoDumpLink = document.getElementById('logoDumpLink');
 
+// Full Dump UI
+const fullDumpDetectBtn = document.getElementById('fullDumpDetectBtn');
+const fullDumpDetectedLabel = document.getElementById('fullDumpDetectedLabel');
+const fullDumpSizeSelect = document.getElementById('fullDumpSizeSelect');
+const fullDumpBtn = document.getElementById('fullDumpBtn');
+const fullDumpDownload = document.getElementById('fullDumpDownload');
+const fullDumpLink = document.getElementById('fullDumpLink');
+const fullDumpViewerSection = document.getElementById('fullDumpViewerSection');
+const fullDumpHexView = document.getElementById('fullDumpHexView');
+const viewerOffsetInput = document.getElementById('viewerOffsetInput');
+const viewerGoBtn = document.getElementById('viewerGoBtn');
+const viewerPrevBtn = document.getElementById('viewerPrevBtn');
+const viewerNextBtn = document.getElementById('viewerNextBtn');
+const viewerPageInfo = document.getElementById('viewerPageInfo');
+
 // ========== VERSION COMPARISON ==========
 function isBootloaderCompatible(version, minVersion) {
   // Parse version strings (e.g., "7.02.02")
@@ -166,11 +185,13 @@ window.updateUI = function updateUI() {
   const tabRestore = document.getElementById('tabRestore');
   const tabLogoUpload = document.getElementById('tabLogoUpload');
   const tabLogoDump = document.getElementById('tabLogoDump');
+  const tabFullDump = document.getElementById('tabFullDump');
   if (tabFlash) tabFlash.textContent = t('tabFlash');
   if (tabDump) tabDump.textContent = t('tabDump');
   if (tabRestore) tabRestore.textContent = t('tabRestore');
   if (tabLogoUpload) tabLogoUpload.textContent = t('tabLogoUpload');
   if (tabLogoDump) tabLogoDump.textContent = t('tabLogoDump');
+  if (tabFullDump) tabFullDump.textContent = t('tabFullDump');
 
   // Description
   const dumpDesc = document.getElementById('dumpDescription');
@@ -203,6 +224,20 @@ window.updateUI = function updateUI() {
     logoFileName.classList.remove('has-file');
     if (logoFileLabel) logoFileLabel.classList.remove('has-file');
   }
+
+  // Full Dump labels
+  const fullDumpDesc = document.getElementById('fullDumpDescription');
+  const fullDumpDownloadText = document.getElementById('fullDumpDownloadText');
+  const labelFullDumpSize = document.getElementById('labelFullDumpSize');
+  const fullDumpViewerTitle = document.getElementById('fullDumpViewerTitle');
+  const labelViewerOffset = document.getElementById('labelViewerOffset');
+  if (fullDumpDesc) fullDumpDesc.textContent = t('fullDumpDescription');
+  if (fullDumpDetectBtn) fullDumpDetectBtn.textContent = t('fullDumpDetectBtn');
+  if (fullDumpBtn) fullDumpBtn.textContent = t('fullDumpBtn');
+  if (fullDumpDownloadText) fullDumpDownloadText.textContent = t('fullDumpDownloadText');
+  if (labelFullDumpSize) labelFullDumpSize.textContent = t('labelFullDumpSize');
+  if (fullDumpViewerTitle) fullDumpViewerTitle.textContent = t('fullDumpViewerTitle');
+  if (labelViewerOffset) labelViewerOffset.textContent = t('labelViewerOffset');
 
   // Log toggle
   if (logToggle) {
@@ -1307,6 +1342,265 @@ if (logoDumpBtn) {
   });
 }
 
+// ========== FULL DUMP ==========
+
+// Hex/ASCII viewer helpers
+const VIEWER_ROWS = 32;       // rows per page
+const VIEWER_COLS = 16;       // bytes per row
+const VIEWER_PAGE_SIZE = VIEWER_ROWS * VIEWER_COLS; // 512 bytes/page
+
+function renderHexViewer(data, page) {
+  if (!fullDumpHexView || !data) return;
+  const totalPages = Math.ceil(data.length / VIEWER_PAGE_SIZE);
+  const start = page * VIEWER_PAGE_SIZE;
+  const end = Math.min(start + VIEWER_PAGE_SIZE, data.length);
+  let out = '';
+  for (let i = start; i < end; i += VIEWER_COLS) {
+    const rowEnd = Math.min(i + VIEWER_COLS, end);
+    // Offset column
+    out += i.toString(16).padStart(4, '0').toUpperCase() + '  ';
+    // Hex columns
+    let hex = '';
+    let asc = '';
+    for (let j = i; j < rowEnd; j++) {
+      hex += data[j].toString(16).padStart(2, '0').toUpperCase() + ' ';
+      const ch = data[j];
+      asc += (ch >= 0x20 && ch < 0x7F) ? String.fromCharCode(ch) : '.';
+    }
+    // Pad if last row is short
+    const missing = VIEWER_COLS - (rowEnd - i);
+    for (let k = 0; k < missing; k++) hex += '   ';
+    out += hex + ' ' + asc + '\n';
+  }
+  fullDumpHexView.textContent = out;
+  if (viewerPageInfo) {
+    viewerPageInfo.textContent = `${t('viewerPage')} ${page + 1} / ${totalPages}`;
+  }
+  if (viewerPrevBtn) viewerPrevBtn.disabled = page === 0;
+  if (viewerNextBtn) viewerNextBtn.disabled = page >= totalPages - 1;
+}
+
+if (viewerGoBtn) {
+  viewerGoBtn.addEventListener('click', () => {
+    if (!fullDumpData) return;
+    const raw = (viewerOffsetInput ? viewerOffsetInput.value : '0').trim();
+    const addr = parseInt(raw, 16);
+    if (isNaN(addr) || addr < 0) return;
+    const page = Math.floor(addr / VIEWER_PAGE_SIZE);
+    const totalPages = Math.ceil(fullDumpData.length / VIEWER_PAGE_SIZE);
+    fullDumpViewerPage = Math.min(page, totalPages - 1);
+    renderHexViewer(fullDumpData, fullDumpViewerPage);
+  });
+}
+
+if (viewerPrevBtn) {
+  viewerPrevBtn.addEventListener('click', () => {
+    if (!fullDumpData || fullDumpViewerPage <= 0) return;
+    fullDumpViewerPage--;
+    renderHexViewer(fullDumpData, fullDumpViewerPage);
+  });
+}
+
+if (viewerNextBtn) {
+  viewerNextBtn.addEventListener('click', () => {
+    if (!fullDumpData) return;
+    const totalPages = Math.ceil(fullDumpData.length / VIEWER_PAGE_SIZE);
+    if (fullDumpViewerPage >= totalPages - 1) return;
+    fullDumpViewerPage++;
+    renderHexViewer(fullDumpData, fullDumpViewerPage);
+  });
+}
+
+// Detect memory size by probing boundary addresses
+if (fullDumpDetectBtn) {
+  fullDumpDetectBtn.addEventListener('click', async () => {
+    if (isFullDumpDetecting || isFullDumping) return;
+    isFullDumpDetecting = true;
+    fullDumpDetectBtn.disabled = true;
+    if (progressContainer) progressContainer.style.display = 'block';
+    updateProgress(0);
+
+    try {
+      if (!port) await connect();
+      readBuffer = [];
+      await sleep(500);
+
+      const devInfo = await requestDeviceInfo();
+      log(t('fullDumpDetecting'), 'info');
+
+      // Probe candidate boundary addresses (last chunk before boundary)
+      const candidates = [8192, 32768, 51200, 65535];
+      let detectedSize = null;
+
+      for (let ci = 0; ci < candidates.length; ci++) {
+        const probeSize = candidates[ci];
+        // Clamp to 16-bit max
+        const probeOffset = Math.min(probeSize, 0xFFFF) - CHUNK_SIZE;
+        updateProgress(Math.round((ci / candidates.length) * 100));
+
+        const msg = createMessage(MSG_READ_EEPROM, 8);
+        const view = new DataView(msg.buffer);
+        view.setUint16(4, probeOffset, true);
+        view.setUint16(6, CHUNK_SIZE, true);
+        view.setUint32(8, devInfo.timestamp, true);
+        await sendMessage(msg);
+
+        let gotResponse = false;
+        for (let attempt = 0; attempt < 300 && !gotResponse; attempt++) {
+          await sleep(10);
+          const resp = fetchMessage(readBuffer);
+          if (!resp) continue;
+          if (resp.msgType === MSG_READ_EEPROM_RESP) {
+            const dv = new DataView(resp.data.buffer);
+            const respOffset = dv.getUint16(0, true);
+            if (respOffset === probeOffset) {
+              gotResponse = true;
+              detectedSize = probeSize;
+            }
+          }
+        }
+
+        if (!gotResponse) break; // beyond readable range
+      }
+
+      updateProgress(100);
+
+      if (detectedSize !== null) {
+        const label = detectedSize >= 1024
+          ? `${Math.round(detectedSize / 1024)} KB`
+          : `${detectedSize} B`;
+        log(t('fullDumpDetected', label), 'success');
+        if (fullDumpDetectedLabel) {
+          fullDumpDetectedLabel.textContent = `${t('fullDumpDetectedLabel')} ${label}`;
+          fullDumpDetectedLabel.style.display = '';
+        }
+        // Pre-select closest option
+        if (fullDumpSizeSelect) {
+          const options = Array.from(fullDumpSizeSelect.options);
+          let best = options[0];
+          for (const opt of options) {
+            if (parseInt(opt.value, 10) <= detectedSize) best = opt;
+          }
+          fullDumpSizeSelect.value = best.value;
+        }
+      }
+
+      setTimeout(() => {
+        if (progressContainer) progressContainer.style.display = 'none';
+        updateProgress(0);
+      }, 800);
+    } catch (e) {
+      log(t('error', e?.message ?? String(e)), 'error');
+    } finally {
+      isFullDumpDetecting = false;
+      fullDumpDetectBtn.disabled = false;
+      if (port) await disconnect();
+    }
+  });
+}
+
+// Full EEPROM dump
+if (fullDumpBtn) {
+  fullDumpBtn.addEventListener('click', async () => {
+    if (isFullDumping || isFullDumpDetecting) return;
+    isFullDumping = true;
+    fullDumpBtn.disabled = true;
+    if (progressContainer) progressContainer.style.display = 'block';
+    updateProgress(0);
+
+    try {
+      if (!port) await connect();
+      readBuffer = [];
+      await sleep(500);
+
+      const devInfo = await requestDeviceInfo();
+      log(t('fullDumpStarting'), 'info');
+
+      // Clamp to 16-bit protocol limit (0xFFFF = 65535 bytes)
+      const totalSize = Math.min(
+        parseInt(fullDumpSizeSelect ? fullDumpSizeSelect.value : '51200', 10),
+        0xFFFF
+      );
+
+      const dumped = new Uint8Array(totalSize);
+      let offset = 0;
+
+      for (let i = 0; i < totalSize; i += CHUNK_SIZE) {
+        // 16-bit address overflow guard
+        if (offset >= 0x10000) {
+          log(t('fullDumpAddressLimit'), 'error');
+          break;
+        }
+
+        const pct = Math.round((i / totalSize) * 100);
+        updateProgress(pct);
+        log(t('fullDumpProgress', i, totalSize, pct), 'info');
+
+        const msg = createMessage(MSG_READ_EEPROM, 8);
+        const view = new DataView(msg.buffer);
+        view.setUint16(4, offset, true);
+        view.setUint16(6, CHUNK_SIZE, true);
+        view.setUint32(8, devInfo.timestamp, true);
+        await sendMessage(msg);
+
+        let gotResponse = false;
+        for (let attempt = 0; attempt < 300 && !gotResponse; attempt++) {
+          await sleep(10);
+          const resp = fetchMessage(readBuffer);
+          if (!resp) continue;
+          if (resp.msgType === MSG_READ_EEPROM_RESP) {
+            const dv = new DataView(resp.data.buffer);
+            const respOffset = dv.getUint16(0, true);
+            const respSize = resp.data[2];
+            if (respOffset === offset && respSize === CHUNK_SIZE) {
+              for (let j = 0; j < CHUNK_SIZE; j++) {
+                dumped[i + j] = resp.data[4 + j];
+              }
+              gotResponse = true;
+              offset += CHUNK_SIZE;
+            }
+          }
+        }
+
+        if (!gotResponse) {
+          throw new Error(t('eepromError', offset.toString(16)));
+        }
+      }
+
+      updateProgress(100);
+      log(t('fullDumpComplete'), 'success');
+
+      // Store for viewer
+      fullDumpData = dumped;
+      fullDumpViewerPage = 0;
+
+      // Download link
+      const blob = new Blob([dumped], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      if (fullDumpLink) {
+        fullDumpLink.href = url;
+        fullDumpLink.download = 'eeprom_full.bin';
+      }
+      if (fullDumpDownload) fullDumpDownload.style.display = 'block';
+
+      // Show hex viewer
+      if (fullDumpViewerSection) fullDumpViewerSection.style.display = '';
+      renderHexViewer(fullDumpData, 0);
+
+      setTimeout(() => {
+        if (progressContainer) progressContainer.style.display = 'none';
+        updateProgress(0);
+      }, 800);
+    } catch (e) {
+      log(t('error', e?.message ?? String(e)), 'error');
+    } finally {
+      isFullDumping = false;
+      fullDumpBtn.disabled = false;
+      if (port) await disconnect();
+    }
+  });
+}
+
 // ========== UI HELPERS ==========
 function log(message, type = '') {
   const entry = document.createElement('div');
@@ -1340,6 +1634,8 @@ if (!('serial' in navigator)) {
   if (restoreBtn) restoreBtn.disabled = true;
   if (logoUploadBtn) logoUploadBtn.disabled = true;
   if (logoDumpBtn) logoDumpBtn.disabled = true;
+  if (fullDumpBtn) fullDumpBtn.disabled = true;
+  if (fullDumpDetectBtn) fullDumpDetectBtn.disabled = true;
 }
 
 // ========== AUTO TAB SELECT VIA ?mode=flash|dump|restore ==========
@@ -1353,7 +1649,8 @@ if (!('serial' in navigator)) {
     dump: "tabDump",
     restore: "tabRestore",
     "logo-upload": "tabLogoUpload",
-    "logo-dump": "tabLogoDump"
+    "logo-dump": "tabLogoDump",
+    "full-dump": "tabFullDump"
   };
 
   const tabId = modeMap[mode];
