@@ -105,5 +105,21 @@
   "logoDumping": "Downloading logo from radio...",
   "logoDumpComplete": "Logo downloaded! 👍🏼",
   "logoMagicOk": "Magic header OK (F4HWNLGO)",
-  "logoMagicMissing": "Magic header missing — area may have never been written by UVTools2"
+  "logoMagicMissing": "Magic header missing — area may have never been written by UVTools2",
+  "tabFullDump": "Full Dump",
+  "fullDumpDescription": "Read the EEPROM memory of your device and save it as a binary file. The firmware protocol uses 16-bit addressing, so the maximum readable range is 64 KB (0x0000–0xFFFF). Preview raw data in hex and ASCII format.",
+  "fullDumpDetectBtn": "🔍 Detect Memory Size",
+  "fullDumpDetecting": "Detecting EEPROM size...",
+  "fullDumpDetected": "Detected EEPROM size: {0}",
+  "fullDumpDetectedLabel": "Detected size:",
+  "labelFullDumpSize": "Memory size to dump",
+  "fullDumpBtn": "📥 Start Full Dump",
+  "fullDumpStarting": "Starting full EEPROM dump...",
+  "fullDumpProgress": "Dumping: {0}/{1} bytes ({2}%)",
+  "fullDumpComplete": "Full EEPROM dump complete! 👍🏼",
+  "fullDumpDownloadText": "Download eeprom_full.bin",
+  "fullDumpViewerTitle": "EEPROM Data Preview",
+  "labelViewerOffset": "Go to address (hex):",
+  "viewerPage": "Page",
+  "fullDumpAddressLimit": "⚠️ Address limit reached: the firmware protocol uses 16-bit addressing (max 64 KB / 0xFFFF). Cannot read beyond this offset."
 }

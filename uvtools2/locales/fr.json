@@ -105,5 +105,21 @@
   "logoDumping": "Téléchargement du logo depuis la radio...",
   "logoDumpComplete": "Logo téléchargé ! 👍🏼",
   "logoMagicOk": "Magic header valide (F4HWNLGO)",
-  "logoMagicMissing": "Magic header absent — la zone n'a peut-être jamais été écrite par UVTools2"
+  "logoMagicMissing": "Magic header absent — la zone n'a peut-être jamais été écrite par UVTools2",
+  "tabFullDump": "Dump Complet",
+  "fullDumpDescription": "Lit la mémoire EEPROM de l'appareil et la sauvegarde en fichier binaire. Le protocole firmware utilise un adressage 16 bits, donc la plage lisible maximale est de 64 Ko (0x0000–0xFFFF). Prévisualisez les données brutes au format hex et ASCII.",
+  "fullDumpDetectBtn": "🔍 Détecter la taille mémoire",
+  "fullDumpDetecting": "Détection de la taille EEPROM...",
+  "fullDumpDetected": "Taille EEPROM détectée : {0}",
+  "fullDumpDetectedLabel": "Taille détectée :",
+  "labelFullDumpSize": "Taille mémoire à dumper",
+  "fullDumpBtn": "📥 Démarrer le dump complet",
+  "fullDumpStarting": "Démarrage du dump EEPROM complet...",
+  "fullDumpProgress": "Extraction : {0}/{1} octets ({2}%)",
+  "fullDumpComplete": "Dump EEPROM complet terminé ! 👍🏼",
+  "fullDumpDownloadText": "Télécharger eeprom_full.bin",
+  "fullDumpViewerTitle": "Aperçu des données EEPROM",
+  "labelViewerOffset": "Aller à l'adresse (hex) :",
+  "viewerPage": "Page",
+  "fullDumpAddressLimit": "⚠️ Limite d'adresse atteinte : le protocole firmware utilise un adressage 16 bits (max 64 Ko / 0xFFFF). Impossible de lire au-delà de cet offset."
 }
